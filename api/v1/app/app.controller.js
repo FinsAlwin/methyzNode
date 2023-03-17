@@ -1,0 +1,31 @@
+const express = require("express");
+const router = express.Router();
+const {
+  isRequestValidated,
+  validate,
+} = require("../../../validators/request_validator");
+
+const { productVarificationCheck, addImage } = require("./app.service");
+const { body, query } = require("express-validator");
+
+router.post("/product-varification-check", function (req, res, next) {
+  productVarificationCheck(req)
+    .then(({ statusCode, data, message }) => {
+      res.status(statusCode).json({ data, message });
+    })
+    .catch((err) => {
+      next(err);
+    });
+});
+
+router.post("/add-image", function (req, res, next) {
+  addImage(req)
+    .then(({ statusCode, url, message }) => {
+      res.status(statusCode).json({ url, message });
+    })
+    .catch((err) => {
+      next(err);
+    });
+});
+
+module.exports = router;
