@@ -12,6 +12,7 @@ const {
 } = require("../../../utils/api_error_util");
 const axios = require("axios");
 const fs = require("fs");
+const FormData = require("form-data");
 
 const apiUrl = "https://methyz.parel.co/";
 
