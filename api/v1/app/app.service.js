@@ -13,6 +13,7 @@ const {
 const axios = require("axios");
 const fs = require("fs");
 const FormData = require("form-data");
+const { Readable } = require("stream");
 
 const apiUrl = "https://methyz.parel.co/";
 
@@ -59,7 +60,7 @@ const productVarificationCheck = async ({ body }) => {
     uid = UidExists._id;
   }
 
-  const data = await productExist(
+  const isExistsRes = await productExist(
     uid,
     product_slug,
     attributes,
@@ -67,51 +68,18 @@ const productVarificationCheck = async ({ body }) => {
     productId
   );
 
-  // if (!url.length) {
-  //   throw new NotFoundError("No Url found");
-  // }
   return {
     statusCode: 200,
-    data: data,
+    data: isExistsRes.data,
+    flag: isExistsRes.isExists,
     message: "Data fetched successfully",
   };
 };
 
-const addImage = async (req) => {
-  const title = req.body.title; // Get the value of the "title" field
-  const fileData = req.files.file.data; // Get the uploaded file data
-  const unique_id = req.body.unique_id;
-  const productId = req.body.productId;
-  const product_slug = req.body.product_slug;
-  const pv_id = req.body.pv_id;
+const updateProduct = async ({ body }) => {
+  const { productId, pv_id, imageId } = body;
 
-  const formData = new FormData();
-  const fileBlob = new Blob([fileData], { type: "image/jpeg" }); // create a Blob from the file data
-
-  formData.append("file", fileBlob, "image.jpg");
-  formData.append("title", title);
-  formData.append("alt_text", "Image Alt Text");
-
-  const UidExists = await Uid.findOne({
-    u_id: unique_id,
-  });
-
-  const res = await uploadImage(formData, UidExists._id);
-
-  const ImagesData = new Images({
-    u_id: UidExists._id,
-    imageId: res.data.id,
-  });
-
-  const data = await ImagesData.save();
-
-  await updateProductVariation(
-    productId,
-    product_slug,
-    UidExists._id,
-    data.imageId,
-    pv_id
-  );
+  await updateProductVariation(productId, pv_id, imageId);
 
   return {
     statusCode: 200,
@@ -121,7 +89,7 @@ const addImage = async (req) => {
 
 module.exports = {
   productVarificationCheck,
-  addImage,
+  updateProduct,
 };
 
 async function productExist(
@@ -181,7 +149,7 @@ async function productExist(
     });
 
     if (MethyzKidsExists) {
-      return MethyzKidsExists;
+      return { data: MethyzKidsExists, isExists: true };
     } else {
       const dataSave = await createProductVariation(
         product_slug,
@@ -190,7 +158,8 @@ async function productExist(
         productId,
         dataPayload
       );
-      return dataSave;
+
+      return { data: dataSave, isExists: false };
     }
   } else if (product_slug === "adults-ragga") {
     const MethyzAdultsExists = await MethyzAdults.findOne({
@@ -204,7 +173,6 @@ async function productExist(
     });
 
     if (MethyzAdultsExists) {
-      return MethyzAdultsExists.url;
     } else {
       const dataSave = await createProductVariation(
         product_slug,
@@ -213,7 +181,8 @@ async function productExist(
         productId,
         dataPayload
       );
-      return dataSave;
+
+      return { data: dataSave, isExists: false };
     }
   } else if (product_slug === "adults-yoga") {
     const MethyzAcupressureExists = await MethyzAcupressure.findOne({
@@ -227,7 +196,7 @@ async function productExist(
     });
 
     if (MethyzAcupressureExists) {
-      return MethyzAcupressureExists.url;
+      return { data: MethyzAcupressureExists, isExists: true };
     } else {
       const dataSave = await createProductVariation(
         product_slug,
@@ -236,7 +205,8 @@ async function productExist(
         productId,
         dataPayload
       );
-      return dataSave;
+
+      return { data: dataSave, isExists: false };
     }
   }
 }
@@ -330,60 +300,21 @@ async function uploadImage(payload, unique_id) {
     });
 }
 
-async function updateProductVariation(
-  productId,
-  product_slug,
-  uid,
-  imageId,
-  pv_id
-) {
-  if (product_slug === "kids-raaga") {
-    return axios
-      .put(
-        `${apiUrl}wp-json/wc/v3/products/${productId}/variations/${pv_id}?consumer_key=ck_9d61dc44c41c73983a3f3c026b7f2268f139b1f9&consumer_secret=cs_a7360bffc944026d40522232cfa40da8f4181a3b`,
-        {
-          image: {
-            id: imageId,
-          },
-        }
-      )
-      .then(async (response) => {
-        return response.data;
-      })
-      .catch((error) => {
-        console.log(error);
-      });
-  } else if (product_slug === "adults-ragga") {
-    axios
-      .put(
-        `${apiUrl}wp-json/wc/v3/products/${productId}/variations/${pv_id}?consumer_key=ck_9d61dc44c41c73983a3f3c026b7f2268f139b1f9&consumer_secret=cs_a7360bffc944026d40522232cfa40da8f4181a3b`,
-        {
-          image: {
-            id: imageId,
-          },
-        }
-      )
-      .then(async (response) => {
-        return response.data;
-      })
-      .catch((error) => {
-        console.log(error);
-      });
-  } else if (product_slug === "adults-yoga") {
-    axios
-      .put(
-        `${apiUrl}wp-json/wc/v3/products/${productId}/variations/${pv_id}?consumer_key=ck_9d61dc44c41c73983a3f3c026b7f2268f139b1f9&consumer_secret=cs_a7360bffc944026d40522232cfa40da8f4181a3b`,
-        {
-          image: {
-            id: imageId,
-          },
-        }
-      )
-      .then(async (response) => {
-        return response.data;
-      })
-      .catch((error) => {
-        console.log(error);
-      });
-  }
+async function updateProductVariation(productId, pv_id, imageId) {
+  return axios
+    .put(
+      `${apiUrl}wp-json/wc/v3/products/${productId}/variations/${pv_id}?consumer_key=ck_9d61dc44c41c73983a3f3c026b7f2268f139b1f9&consumer_secret=cs_a7360bffc944026d40522232cfa40da8f4181a3b`,
+      {
+        image: {
+          id: imageId,
+        },
+      }
+    )
+    .then(async (response) => {
+      console.log(response);
+      return response.data;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
 }
