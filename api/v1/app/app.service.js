@@ -15,7 +15,7 @@ const fs = require("fs");
 const FormData = require("form-data");
 const { Readable } = require("stream");
 
-const apiUrl = "https://methyz.parel.co/";
+const apiUrl = "https://methyz.com/";
 
 const productVarificationCheck = async ({ body }) => {
   const {
@@ -311,7 +311,6 @@ async function updateProductVariation(productId, pv_id, imageId) {
       }
     )
     .then(async (response) => {
-      console.log(response);
       return response.data;
     })
     .catch((error) => {
