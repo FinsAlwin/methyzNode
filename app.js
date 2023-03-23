@@ -14,7 +14,7 @@ var app = express();
 app.use(cors());
 
 const mongoString =
-  "mongodb+srv://methyz:tq8itxk3do9OhD2A@methyzserverlessinstanc.kkaeowg.mongodb.net/?retryWrites=true&w=majority/methyz_micro";
+  "mongodb+srv://methyz:tq8itxk3do9OhD2A@methyzserverlessinstanc.kkaeowg.mongodb.net/?retryWrites=true&w=majority";
 mongoose.connect(mongoString);
 const database = mongoose.connection;
 
